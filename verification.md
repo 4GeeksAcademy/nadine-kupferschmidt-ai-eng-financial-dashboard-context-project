@@ -39,3 +39,7 @@
 2. Marcar el puerto `8000` como **Public** en Codespaces.
 3. Reiniciar los servicios para que Vite lea `.env` al arrancar: `docker compose down` y `docker compose up --build`.
 4. Recargar el dashboard; con esa configuración muestra los datos.
+
+## Nota posterior (Fase 4)
+
+El resumen de la Fase 1 no mencionó `AGENTS.md`, que ya existía en el repo original y define dónde buscar reglas, skills y memory-bank. Se detectó al verificar una cita en `memory-bank/actualizacion.md`.
