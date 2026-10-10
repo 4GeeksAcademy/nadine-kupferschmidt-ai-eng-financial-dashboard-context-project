@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   computeKPIs,
   computeMonthlyData,
+  formatMonthlyPeriod,
   formatCurrency,
   formatPercent,
 } from "./financial-utils";
@@ -100,6 +101,21 @@ describe("computeMonthlyData", () => {
       outcome: 0,
       profitPercent: 100,
     });
+  });
+});
+
+describe("formatMonthlyPeriod", () => {
+  it("formats the first and last month in the data", () => {
+    expect(
+      formatMonthlyPeriod([
+        { month: "Dec 2025", income: 1000, outcome: 200, profitPercent: 80 },
+        { month: "Jan 2026", income: 300, outcome: 0, profitPercent: 100 },
+      ]),
+    ).toBe("Dec 2025 - Jan 2026");
+  });
+
+  it("returns a fallback when there is no data", () => {
+    expect(formatMonthlyPeriod([])).toBe("Sin datos");
   });
 });
 

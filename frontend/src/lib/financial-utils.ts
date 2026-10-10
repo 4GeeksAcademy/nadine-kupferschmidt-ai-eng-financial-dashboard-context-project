@@ -66,6 +66,14 @@ export function computeMonthlyData(
     });
 }
 
+export function formatMonthlyPeriod(monthlyData: MonthlyDataPoint[]): string {
+  const firstMonth = monthlyData[0]?.month;
+  const lastMonth = monthlyData.at(-1)?.month;
+  return firstMonth && lastMonth
+    ? `${firstMonth} - ${lastMonth}`
+    : "Sin datos";
+}
+
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",

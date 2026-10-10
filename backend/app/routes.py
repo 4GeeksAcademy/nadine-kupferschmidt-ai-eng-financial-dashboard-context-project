@@ -62,6 +62,10 @@ class MetricsAlert(BaseModel):
     increase_ratio: float
 
 
+class HealthResponse(BaseModel):
+    status: str
+
+
 def _year_for_month(month: int, today: date) -> int:
     if month < today.month:
         return today.year
@@ -240,9 +244,9 @@ def detect_outcome_alerts(
     return alerts
 
 
-@router.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+@router.get("/health", response_model=HealthResponse)
+def health() -> HealthResponse:
+    return HealthResponse(status="ok")
 
 
 @router.get("/api/metrics", response_model=list[FinancialMovement])
