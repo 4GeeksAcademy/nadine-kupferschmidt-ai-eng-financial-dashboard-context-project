@@ -20,7 +20,7 @@ Este documento registra acuerdos; no implementa funcionalidades.
 ## 3. Umbral inválido
 
 - **Problema:** La API permite umbrales desde cero y no declara máximo, mientras el producto exige `[0.01, 1.0]`.
-- **Decisión:** Mantener el valor por defecto `0.3`. Si el umbral está fuera de `[0.01, 1.0]`, mostrar un error junto al input y no pedir datos nuevos hasta que sea válido.
+- **Decisión:** Mantener el valor por defecto `0.3`. Si el umbral está fuera de `[0.01, 1.0]`, mostrar un error junto al input y congelar solo la tabla de alertas, sin pedir nuevas alertas hasta que sea válido. Los KPI, gráficos y la vista B2B vs B2C siguen respondiendo a cambios de fechas válidos.
 - **Evidencia:** [exploracion-api.md](exploracion-api.md), sección «3. GET /api/metrics/alerts», parámetros; y «Diferencias PM vs API», fila del umbral.
 - **Alternativa descartada y por qué:** Ajustarlo al valor válido más cercano; modificaría silenciosamente el valor introducido por el usuario.
 
@@ -37,3 +37,17 @@ Este documento registra acuerdos; no implementa funcionalidades.
 - **Decisión:** Obtener `min_date` y `max_date` de `GET /api/metrics/facets`, mostrarlos como referencia global y usarlos como mínimo y máximo de ambos inputs de fecha.
 - **Evidencia:** [exploracion-api.md](exploracion-api.md), sección «1. GET /api/metrics/facets», campos y alcance global sin filtros.
 - **Alternativa descartada y por qué:** Mostrar el rango solo como referencia sin limitar los inputs, o sustituirlo por el rango seleccionado; no cumpliría su función acordada como límites globales de selección.
+
+## 6. Navegación entre vistas
+
+- **Problema:** El PM pide una nueva página, pero el proyecto no tiene una librería de rutas declarada.
+- **Decisión:** Cambiar de vista con estado local de React, sin librerías nuevas. Dentro de `BusinessComparisonView`, incluir el botón **«← Volver al dashboard»** para regresar a la vista principal. No hay URL propia y la flecha Atrás del navegador no cambia de vista; queda por confirmar con el PM si estas limitaciones satisfacen su pedido de nueva página.
+- **Evidencia:** [package.json](../package.json), dependencias sin router; [components.md](components.md), sección «F3. Vista B2B vs B2C», navegación y `BusinessComparisonView`.
+- **Alternativa descartada y por qué:** Añadir una librería de rutas; el cambio de vista acordado se resuelve con React existente, sin dependencias nuevas.
+
+## 7. Formato consistente con el dashboard
+
+- **Problema:** Los formatos nuevos propuestos diferían de los que ya usa el dashboard para importes y porcentajes.
+- **Decisión:** Reutilizar `formatCurrency` y `formatPercent` existentes: importes en USD sin decimales y porcentajes con un decimal. Multiplicar `increase_ratio` por 100 antes de `formatPercent`; los porcentajes de categoría ya calculados se pasan directamente. Mantener el mismo formato en toda la pantalla.
+- **Evidencia:** Uso actual de `formatCurrency` en [kpi-row.tsx](../src/components/dashboard/kpi-row.tsx#L16) y de `formatPercent` en [kpi-row.tsx](../src/components/dashboard/kpi-row.tsx#L40); configuración USD en [financial-utils.ts](../src/lib/financial-utils.ts#L80) y porcentaje en [financial-utils.ts](../src/lib/financial-utils.ts#L86).
+- **Alternativa descartada y por qué:** Crear formatos nuevos con otro locale y distinta precisión; produciría diferencias dentro de la misma pantalla y duplicaría utilidades que ya existen.
