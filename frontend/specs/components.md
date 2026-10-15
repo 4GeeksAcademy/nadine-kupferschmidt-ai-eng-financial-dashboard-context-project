@@ -38,7 +38,7 @@ con dimensiones estables; alertas de validación asociadas al input.
 
 | Prop | Tipo | Significado |
 | --- | --- | --- |
-| `value` | `DateRangeFilter` | Borrador de los dos inputs, no necesariamente aplicado. |
+| `value` | `DateRangeFilter` | Borrador de los dos inputs; se aplica automáticamente en cuanto ambas fechas son válidas. |
 | `onChange` | `(value: DateRangeFilter) => void` | Comunica la edición; un input vacío omite su propiedad. |
 | `facets` | `FacetsResponse | null` | Referencia global de fechas. |
 | `loading` | `boolean` | Carga de facetas. |
@@ -51,6 +51,13 @@ por ambas vistas. Inputs nativos de fecha «Inicio» y «Fin»; valores contract
 usan `min=facets.min_date` y `max=facets.max_date`; la referencia es global, no
 cambia con la selección. Los mensajes se muestran junto a los controles.
 
+Mostrar todos los errores activos simultáneamente y en este orden: «La fecha no
+es válida.»; «La fecha debe estar entre {min_date} y {max_date}.»; «Completa
+ambas fechas para aplicar el filtro»; «La fecha de inicio no puede ser posterior
+a la fecha de fin.». Cada mensaje desaparece al corregir su error, sin ocultar
+los demás. Evaluar el error de rango invertido solo cuando ambas fechas estén
+completas y sean válidas.
+
 **Comportamiento y renderizado condicional:**
 
 | Caso | Resultado |
@@ -58,11 +65,12 @@ cambia con la selección. Los mensajes se muestran junto a los controles.
 | Facetas cargando | Skeleton para el rango disponible e inputs deshabilitados hasta conocer sus límites. Los datos del dashboard tienen su carga independiente. |
 | Error de facetas | «No se pudo cargar el rango disponible.»; inputs deshabilitados, sin inventar límites. No convertirlo en un dashboard vacío. |
 | `facets === null` sin carga ni error | «Rango disponible no disponible» e inputs deshabilitados. No es una respuesta vacía del contrato: facetas exige ambas fechas. |
-| Ambas fechas ausentes | Rango aplicado `{}`: todos los datos disponibles, sin parámetros de fecha. |
-| Solo una fecha completa | Rango aplicado `{}`: mostrar todos los datos y el texto exacto «Completa ambas fechas para aplicar el filtro». No conservar un filtro previo ni enviar un extremo abierto. |
-| Inicio posterior a fin | «La fecha de inicio no puede ser posterior a la fecha de fin.»; rango aplicado `{}`, sin enviar el rango inválido. |
-| Fecha inválida o fuera de los límites | Error junto al campo y ningún filtro inválido; usar datos sin filtro. Validar también fuera de la validación nativa del input. |
-| Ambas válidas, dentro de límites y ordenadas | Aplicar ambas fechas inclusive al dashboard, tops y resúmenes; también a alertas si el umbral es válido. Un umbral inválido solo congela las alertas. |
+| Ambas fechas ausentes | Enviar `{}`: todos los datos disponibles, sin parámetros de fecha. |
+| Solo una fecha completa | Enviar `{}`: mostrar todos los datos y el texto exacto «Completa ambas fechas para aplicar el filtro». No conservar un filtro previo ni enviar un extremo abierto. |
+| Fecha de calendario inválida | Mostrar junto al campo «La fecha no es válida.» y usar todos los datos, sin enviar el rango inválido. Validar también fuera de la validación nativa del input. |
+| Fecha fuera de los límites | Mostrar junto al campo «La fecha debe estar entre {min_date} y {max_date}.» y usar todos los datos, sin enviar el rango inválido. |
+| Inicio posterior a fin | «La fecha de inicio no puede ser posterior a la fecha de fin.»; enviar `{}`, sin enviar el rango inválido. |
+| Ambas válidas, dentro de límites y ordenadas | Aplicar automáticamente ambas fechas inclusive al dashboard, tops y resúmenes; también a alertas si el umbral es válido. No hay botón para aplicar. Un umbral inválido solo congela las alertas. |
 | Rango válido sin movimientos | Conservar inputs y referencia global; KPI en cero, gráficos vacíos, alertas y paneles con sus mensajes propios. No borrar el rango elegido. |
 
 **Funciones necesarias:** `validateDateRange`, `resolveAppliedDateRange` y
@@ -83,6 +91,7 @@ del rango aplicado, no sobre el borrador.
 | `params` | `AlertsParams` | Parámetros de la última consulta válida de alertas: `threshold`, `group_by: "month"` y su rango; mientras la tabla esté congelada pueden diferir del rango actual del dashboard. |
 | `thresholdInput` | `string` | Borrador editable, conserva valores vacíos o inválidos sin ajustarlos. |
 | `onThresholdInputChange` | `(value: string) => void` | Edición del control; no representa todavía un umbral validado. |
+| `onThresholdCommit` | `(value: string) => void` | Confirma el borrador al salir del campo o presionar Enter; no se invoca por cada tecla. |
 | `entries` | `AlertsResponse | null` | Filas de API; cada una es `AlertEntry`. |
 | `facets` | `FacetsResponse | null` | Permite evaluar los extremos disponibles cuando no hay filtro. |
 | `loading` | `boolean` | Carga de alertas. |
@@ -106,6 +115,7 @@ de cuatro columnas. No introducir un selector de agrupación: siempre mensual.
 - Éxito con `entries.length === 0`: texto exacto **«No hay alertas para el rango de fechas y el umbral seleccionados.»** Una respuesta vacía no prueba que no existan movimientos.
 - `entries === null` sin carga ni error: «Alertas no disponibles», no el texto de éxito vacío.
 - Umbral fuera de `[0.01, 1.0]`, vacío o no numérico: mostrar junto al input **«Introduce un umbral entre 0.01 y 1.0.»** Marcarlo inválido y no pedir datos nuevos de alertas hasta corregirlo; no ajustar al extremo más cercano ni sustituirlo por `0.3` silenciosamente. API admite desde `0` sin máximo, pero la UI es más restrictiva.
+- Consultar el umbral válido al salir del campo (blur) o al presionar Enter. La edición por tecla solo actualiza el borrador y nunca inicia una consulta.
 - Durante un umbral inválido congelar solo la tabla de alertas: conservar su última respuesta y sus parámetros, identificada como «Se muestran los últimos datos válidos.» e indicar las fechas y el umbral de esa consulta. Los KPI, gráficos y la vista B2B vs B2C siguen respondiendo a cambios de fechas válidos, incluidos tops y resúmenes. No atribuir las alertas anteriores al nuevo rango global. Si aún no hay respuesta válida, mantener «Alertas no disponibles». Al corregir el umbral, consultar alertas con el rango actual resuelto; no recuperar las fechas antiguas de la tabla congelada.
 - Las alertas se muestran tal cual; el cliente no recalcula medias, no genera filas adicionales ni aplica una ventana de tres. Usar `group_by: "month"`; la API decide con comparación estricta `increase_ratio > threshold`.
 
@@ -115,8 +125,9 @@ inicio efectivo no sea el primer día del mes o el fin efectivo no sea el últim
 Usar ambas fechas aplicadas; sin filtro, usar `facets.min_date` y `facets.max_date`
 como extremos disponibles. No usar el borrador inválido o incompleto. No asumir
 meses de 30 días ni completar importes. Si faltan facetas y no hay filtro, la
-completitud no puede determinarse: ❓ sin evidencia. La existencia de movimientos
-todos los días o la integridad del origen tampoco está demostrada por las facetas.
+completitud no puede determinarse y no se muestra ningún aviso. La existencia de
+movimientos todos los días o la integridad del origen tampoco está demostrada
+por las facetas.
 
 **Funciones necesarias:** `validateAlertThreshold`, `hasPartialMonthRange`,
 `formatAlertPeriod`, `formatCurrency` y `formatRatioPercent` (que reutiliza `formatPercent`). El aviso
@@ -173,7 +184,9 @@ a la decisión 6.
 `BusinessType` procede de los enums existentes. Las claves B2B y B2C de estos
 mapas son organización interna de UI: ni el top ni summary devuelven un nuevo
 campo `business_type`. Asociar cada respuesta a sus parámetros de petición;
-comprobar que negocio y rango coincidan antes de combinarla.
+comprobar que negocio y rango coincidan antes de combinarla. Las facetas se usan
+solo para las fechas; siempre se muestran ambos paneles, aunque `business_types`
+no enumere uno de los grupos.
 
 **Layout:** botón «← Volver al dashboard» junto al título «B2B vs B2C»;
 gráfico comparativo a todo el ancho,
@@ -217,6 +230,7 @@ No completar hasta cinco filas ficticias.
 - Top cargando: skeleton de tres columnas. Error: «No se pudieron cargar las categorías de B2B.» o «No se pudieron cargar las categorías de B2C.» según instancia.
 - Top B2B vacío: **«No hay categorías de ingreso B2B para el rango seleccionado.»**
 - Top B2C vacío: **«No hay categorías de ingreso B2C para el rango seleccionado.»**
+- Mostrar siempre los dos paneles, independientemente de `business_types` en facetas; si un top está vacío, mostrar el mensaje de vacío de ese grupo.
 - `entries === null` sin carga/error: «Categorías no disponibles», no el éxito vacío.
 - Con top válido y resumen cargando: conservar nombre e importe y skeleton en porcentajes. Con error de resumen, mostrar «No se pudo cargar el total del grupo.» y «No disponible» en porcentajes; no esconder las categorías.
 - Total válido cero: porcentaje «No aplica», sin dividir por cero ni inventar `0 %`. Un top vacío no implica por sí solo que el total sea cero.
@@ -271,11 +285,11 @@ depender de conversiones que desplacen una fecha por zona horaria.
 
 | Función | Entradas → salida / responsabilidad |
 | --- | --- |
-| `validateDateRange` | `(range: DateRangeFilter, facets: FacetsResponse) → string \| null`; validar formato real de calendario, pareja completa, límites globales y orden. Mensajes de F1. |
+| `validateDateRange` | `(range: DateRangeFilter, facets: FacetsResponse) → string[]`; validar formato real de calendario, pareja completa, límites globales y orden. Devolver todos los errores activos en el orden acordado en la decisión 13; devolver `[]` si no hay errores. |
 | `resolveAppliedDateRange` | `(range: DateRangeFilter, facets: FacetsResponse) → DateRangeFilter`; devolver ambas fechas válidas o `{}`; nunca un extremo abierto. |
 | `formatAvailableDateRange` | `(facets: FacetsResponse) → string`; referencia global exacta con `min_date` y `max_date`. |
 | `validateAlertThreshold` | `(input: string) → string \| null`; exigir número finito en `[0.01, 1.0]`, sin ajustar; normalización del valor válido también fuera del JSX. |
-| `hasPartialMonthRange` | `(range: DateRangeFilter, facets: FacetsResponse \| null) → boolean \| null`; extremos del rango aplicado o disponibles, primer/último día del mes; null si faltan extremos. |
+| `hasPartialMonthRange` | `(range: DateRangeFilter, facets: FacetsResponse \| null) → boolean \| null`; extremos del rango aplicado o disponibles, primer/último día del mes; null si faltan extremos, caso en que no se muestra aviso. |
 | `formatAlertPeriod` | `(period: AlertEntry["period"]) → string`; conservar el `YYYY-MM` mensual; no convertirlo a otra granularidad ni fabricar fechas. |
 | `sumSummaryIncome` | `(entries: SummaryResponse) → number`; sumar todos los `SummaryEntry.income`; `[] → 0`, sin interpretar null/error como cero. |
 | `buildBusinessIncomePoints` | `(totals: Record<BusinessType, number>) → pares internos negocio/total`; dos puntos en orden B2B, B2C. Solo entradas ya disponibles, no null. |
@@ -298,11 +312,14 @@ a la API. Para alertas, siempre multiplicar `increase_ratio` por 100 antes de
 
 La regla 17 exige comprobar en navegador cualquier futuro cambio de `App` o
 componentes. Esta fase documental no verifica una interfaz nueva. Casos mínimos:
-dos fechas válidas; una fecha tras un filtro previo; inicio posterior a fin;
+dos fechas válidas aplicadas automáticamente; una fecha tras un filtro previo;
+fecha de calendario inválida; fecha fuera de límites; inicio posterior a fin;
 límites globales; umbral inválido sin nuevas peticiones de alertas mientras KPI,
-gráficos y B2B vs B2C sí responden a fechas válidas; aviso de meses parciales;
-alertas vacías y porcentaje superior a 100; top vacío en cada negocio; fallo de
-un resumen sin falsear ceros; gráfico con cero, uno o ambos grupos con ingresos;
+gráficos y B2B vs B2C sí responden a fechas válidas; umbral consultado al salir
+del campo o con Enter, nunca por tecla; ausencia de aviso si no se puede
+determinar la completitud; alertas vacías y porcentaje superior a 100; top vacío
+en cada negocio con ambos paneles visibles; fallo de un resumen sin falsear ceros;
+gráfico con cero, uno o ambos grupos con ingresos;
 cambio de vista sin perder selección, botón «← Volver al dashboard», flecha Atrás
 del navegador sin cambio de vista, formatos existentes y escritorio/móvil sin solapamientos.
 Probar también los helpers con casos nominales y bordes durante la implementación.

@@ -51,3 +51,44 @@ Este documento registra acuerdos; no implementa funcionalidades.
 - **Decisión:** Reutilizar `formatCurrency` y `formatPercent` existentes: importes en USD sin decimales y porcentajes con un decimal. Multiplicar `increase_ratio` por 100 antes de `formatPercent`; los porcentajes de categoría ya calculados se pasan directamente. Mantener el mismo formato en toda la pantalla.
 - **Evidencia:** Uso actual de `formatCurrency` en [kpi-row.tsx](../src/components/dashboard/kpi-row.tsx#L16) y de `formatPercent` en [kpi-row.tsx](../src/components/dashboard/kpi-row.tsx#L40); configuración USD en [financial-utils.ts](../src/lib/financial-utils.ts#L80) y porcentaje en [financial-utils.ts](../src/lib/financial-utils.ts#L86).
 - **Alternativa descartada y por qué:** Crear formatos nuevos con otro locale y distinta precisión; produciría diferencias dentro de la misma pantalla y duplicaría utilidades que ya existen.
+
+## 8. Aplicación automática del rango
+
+- **Problema:** No se había especificado cuándo se aplica el borrador de fechas.
+- **Decisión:** Aplicar automáticamente el filtro en cuanto ambas fechas sean válidas, completas, estén dentro de los límites globales y en orden. Con una sola fecha o con fechas inválidas, mostrar todos los datos y el mensaje correspondiente; no conservar un filtro anterior.
+- **Evidencia:** [components.md](components.md), sección «F1. Filtro de fechas», `DateRangeControls`.
+- **Alternativa descartada y por qué:** Añadir una acción explícita para aplicar el rango; no es necesaria con aplicación automática.
+
+## 9. Mensajes de validación de fechas
+
+- **Problema:** La validación no especificaba el texto para una fecha de calendario inválida ni para una fecha fuera de los límites globales.
+- **Decisión:** Para una fecha no válida, mostrar **«La fecha no es válida.»**; para una fecha fuera de los límites, mostrar **«La fecha debe estar entre {min_date} y {max_date}.»**. Mantener el mensaje ya definido para el rango invertido.
+- **Evidencia:** [components.md](components.md), sección «F1. Filtro de fechas», `DateRangeControls`.
+- **Alternativa descartada y por qué:** Usar un mensaje genérico para todos los errores; no distinguiría entre formato/calendario y límites de selección.
+
+## 10. Confirmación del umbral
+
+- **Problema:** No se había definido el evento que confirma un umbral válido para consultar alertas.
+- **Decisión:** Consultar alertas al salir del campo (blur) o al presionar Enter. No consultar con cada tecla; los valores inválidos siguen bloqueando nuevas consultas.
+- **Evidencia:** [components.md](components.md), sección «F2. Alertas de egresos», `OutcomeAlertsSection`.
+- **Alternativa descartada y por qué:** Consultar mientras se escribe; produciría consultas por valores intermedios que todavía no se han confirmado.
+
+## 11. Completitud mensual indeterminable
+
+- **Problema:** No se había definido cómo presentar la completitud cuando faltan las fechas necesarias para evaluarla.
+- **Decisión:** Si no se puede determinar si el rango incluye meses incompletos, no mostrar ningún aviso de meses incompletos.
+- **Evidencia:** [components.md](components.md), sección «F2. Alertas de egresos», «Meses incompletos».
+- **Alternativa descartada y por qué:** Mostrar un aviso de estado indeterminado; se decide omitirlo cuando no hay evidencia suficiente.
+
+## 12. Paneles independientes de facetas
+
+- **Problema:** No se había definido si `business_types` de facetas controla qué paneles se muestran.
+- **Decisión:** Mostrar siempre los paneles B2B y B2C. Usar `/api/metrics/facets` solo para las fechas, no para decidir la presencia de los paneles. Si un grupo no tiene datos, mostrar el mensaje de top vacío de ese grupo.
+- **Evidencia:** [components.md](components.md), sección «F3. Vista B2B vs B2C», `BusinessComparisonView` y `BusinessCategoryPanel`.
+- **Alternativa descartada y por qué:** Ocultar un panel según las facetas; los dos grupos forman parte fija de la comparación.
+
+## 13. Errores simultáneos de fecha
+
+- **Problema:** No se había definido qué mostrar cuando hay más de un error de fecha activo.
+- **Decisión:** Mostrar simultáneamente todos los errores activos, en este orden fijo: «La fecha no es válida.»; «La fecha debe estar entre {min_date} y {max_date}.»; «Completa ambas fechas para aplicar el filtro»; «La fecha de inicio no puede ser posterior a la fecha de fin.». El error de rango invertido solo se evalúa si ambas fechas están completas y son válidas. Cada mensaje desaparece cuando se corrige su error; los demás permanecen visibles. `validateDateRange` devuelve `string[]`, vacío cuando no hay errores.
+- **Alternativa descartada y por qué:** Mostrar un solo error a la vez obligaría al usuario a descubrirlos de a uno.
