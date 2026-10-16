@@ -8,9 +8,19 @@
 - En el Codespace verificado, el proxy interno de Vite no logró establecer TCP con `backend:8000`; la causa de bajo nivel quedó sin evidencia. Fuente: `verification.md` (afirmaciones 12-16), `DIAGNOSTICO.md:90`, `DIAGNOSTICO.md:104`.
 - La verificación registra como solución funcional configurar `frontend/.env` con la URL pública del puerto `8000`, marcarlo como Public, reiniciar Compose y recargar; el dashboard mostró datos. Fuente: `verification.md` (Cómo ejecutar en Codespaces; Prueba 1, regla 13, `.agents/validacion-reglas.md`).
 
+## Skills de agente
+
+- **Skills comunitarias aplicadas:**
+	- `accessibility`: Lighthouse Accessibility se mantuvo en **100 → 100**, con **21 auditorías aprobadas** después del cambio; una persona verificó el teclado en Chrome (foco visible, navegación por meses y sin trampa). Fuente: `notas-skills.md` (Accesibilidad: verificación manual).
+	- `vercel-react-best-practices`: la carga diferida de gráficos redujo el entry inicial de **585.99 kB a 188.05 kB**; el warning de chunks mayores a 500 kB desapareció. Fuente: `notas-skills.md` (Vercel React: cambios aplicados).
+	- `python-testing-patterns`: los casos parametrizados del filtro de fechas elevaron pytest de **15 a 20 pasados**; no apareció un bug. Fuente: `notas-skills.md` (Ecosistema).
+- **Selección del ecosistema:** se eligió `python-testing-patterns` porque el gap era probar por pytest/TestClient los límites inclusivos, extremos abiertos y rango invertido del endpoint FastAPI; se descartaron skills TypeScript por no corresponder al stack/problemática. Fuente: `notas-skills.md` (Ecosistema).
+- **Ubicación:** skills comunitarias en `.agents/skills/`, según `AGENTS.md`; skill interna de QA en `.skills/dashboard-qa-pre-merge.md`, según la consigna del repo.
+
 ## Limitaciones y prioridades pendientes
 
-- `AGENTS.md:8-9` indica buscar skills en `./.agents/skills`, pero esa carpeta no existe (❓ sin skills definidas).
+- La limitación de que faltaba `.agents/skills/` quedó resuelta: ahora contiene `accessibility/`, `python-testing-patterns/` y `vercel-react-best-practices/`. La checklist interna está en `.skills/dashboard-qa-pre-merge.md`.
+- El warning de build “Some chunks are larger than 500 kB” ya no aparece tras separar los gráficos; no es un riesgo pendiente. El warning de `httpx`/`TestClient` del backend sí persiste.
 
 Las prioridades siguientes corresponden únicamente a riesgos que siguen listados en `hallazgos.md`:
 
