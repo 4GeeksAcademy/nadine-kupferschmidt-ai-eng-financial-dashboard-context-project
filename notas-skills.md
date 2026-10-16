@@ -144,3 +144,11 @@ Medición de referencia indicada por el usuario: Chrome Lighthouse **13.4.1**, *
 
 - **Tests:** 1 archivo aprobado; **7/7 tests**, sin errores ni advertencias. Igual que la línea base.
 - **Lint:** pasó sin errores, advertencias ni diagnósticos, igual que la línea base.
+
+## Ecosistema
+
+- **Búsquedas realizadas:** `npx skills find testing` devolvió, entre otras, `wshobson/agents@python-testing-patterns`, `wshobson/agents@e2e-testing-patterns` y skills de pruebas de navegador. `npx skills find typescript` devolvió, entre otras, `wshobson/agents@typescript-advanced-types`, `jeffallan/claude-skills@typescript-pro`, `sickn33/agentic-awesome-skills@typescript-expert` y `github/awesome-copilot@javascript-typescript-jest`.
+- **Skill elegida:** [python-testing-patterns](.agents/skills/python-testing-patterns/SKILL.md). El cambio es una prueba de integración pytest con `TestClient` sobre el contrato de FastAPI; `pytest.mark.parametrize` cubre límites inclusivos, cada extremo abierto y rango invertido. Esto convierte en evidencia automatizada los casos del filtro de fechas que, según la exploración de `feature/frontend-specs`, habían quedado como «❓ sin evidencia».
+- **Skills TypeScript descartadas:** las opciones encontradas se enfocan en tipos avanzados, desarrollo TypeScript/Jest o servicios/frameworks TypeScript. Este endpoint y sus pruebas son Python/FastAPI/pytest; no hay un problema TypeScript relacionado que resolver en esta tarea.
+- **Pruebas API:** `docker compose exec -T backend pytest` recogió **20 casos, 20 pasaron**; la línea base era 15, por lo que se añadieron cinco casos parametrizados. No apareció un bug y no se modificó código del backend.
+- **Warning de pytest:** `StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.` Es el warning deprecado ya registrado en la línea base; no se instalaron dependencias.
