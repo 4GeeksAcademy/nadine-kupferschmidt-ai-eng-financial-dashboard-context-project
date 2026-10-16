@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { type MonthlyDataPoint } from '@/lib/financial-types'
+import { formatPercent } from '@/lib/financial-utils'
 import {
   LineChart,
   Line,
@@ -48,6 +49,8 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
 }
 
 export function ProfitPercentChart({ data, loading }: ProfitPercentChartProps) {
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
   if (loading) {
     return (
       <Card className="border-border/60">
@@ -77,7 +80,11 @@ export function ProfitPercentChart({ data, loading }: ProfitPercentChartProps) {
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+            <LineChart
+              data={data}
+              desc="Monthly profit margin values are available in the following data table."
+              margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" strokeOpacity={0.6} />
               <XAxis
                 dataKey="month"
@@ -99,6 +106,7 @@ export function ProfitPercentChart({ data, loading }: ProfitPercentChartProps) {
                 type="monotone"
                 dataKey="profitPercent"
                 name="profitPercent"
+                isAnimationActive={!prefersReducedMotion}
                 stroke="var(--chart-profit)"
                 strokeWidth={2}
                 dot={{ r: 3, fill: 'var(--chart-profit)', strokeWidth: 0 }}
@@ -107,6 +115,23 @@ export function ProfitPercentChart({ data, loading }: ProfitPercentChartProps) {
             </LineChart>
           </ResponsiveContainer>
         )}
+        <table className="sr-only">
+          <caption>Monthly profit margin data</caption>
+          <thead>
+            <tr>
+              <th scope="col">Month</th>
+              <th scope="col">Profit margin</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((point) => (
+              <tr key={point.month}>
+                <th scope="row">{point.month}</th>
+                <td>{formatPercent(point.profitPercent)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </CardContent>
     </Card>
   )
