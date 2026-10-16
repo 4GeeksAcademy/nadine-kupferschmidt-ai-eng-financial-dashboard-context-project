@@ -109,3 +109,38 @@ Medición de referencia indicada por el usuario: Chrome Lighthouse **13.4.1**, *
 - **Teclado:** Tab enfoca ambos gráficos con contorno visible; las flechas izquierda/derecha recorren los meses y muestran su tooltip; arriba/abajo desplazan la página con el comportamiento normal del navegador; no hay trampa de foco. Las tarjetas KPI no reciben foco porque no son interactivas. ✅
 - **Corrección 6 (foco visible):** no requiere cambios; verificado manualmente.
 - **Lighthouse después de los cambios:** Chrome Lighthouse 13.4.1, Desktop, solo Accessibility, con la misma configuración: puntuación 100; 21 auditorías aprobadas (antes 20) y 42 no aplicables (antes 43). La auditoría nueva aprobada es “table cells have [headers] attribute”, al existir ahora las tablas `sr-only`. El orden de encabezados sigue aprobado tras cambiar `CardTitle` a `h2`. ✅
+
+## Vercel React: auditoría y propuestas
+
+### Evidencia del bundle
+
+- El build del contenedor produjo `dist/assets/index-DEKEIsYJ.js` con **585,975 bytes** (**585.99 kB**, **175.59 kB gzip**), por encima del límite de 500 kB del aviso.
+- Añadí en memoria un plugin de reporte al pipeline de Vite/Rolldown para leer `chunk.modules` sin cambiar archivos ni instalar dependencias. Sus sumas de `renderedLength` por paquete (tamaño de módulos renderizados antes de la minificación final; no son partes aditivas del tamaño final) fueron: `recharts` **478,290 bytes**, `react-dom` **458,707 bytes**, `tailwind-merge` **54,185 bytes**, `es-toolkit` **43,990 bytes**, `immer` **36,850 bytes**, `d3-scale` **27,681 bytes**, `@reduxjs/toolkit` **26,231 bytes** y `decimal.js-light` **25,427 bytes**. Entre los módulos individuales grandes: `react-dom-client.production.js` **452,058 bytes**, `recharts/es6/state/selectors/axisSelectors.js` **43,003 bytes**, y `recharts/es6/cartesian/Line.js` **16,638 bytes**, con la misma métrica previa a minificación.
+- `App.tsx` importa estáticamente los dos componentes de gráficos ([App.tsx](frontend/src/App.tsx#L1-L5)); ambos dependen de Recharts ([income-outcome-chart.tsx](frontend/src/components/dashboard/income-outcome-chart.tsx#L5-L14), [profit-percent-chart.tsx](frontend/src/components/dashboard/profit-percent-chart.tsx#L5-L14)). La dependencia está declarada en [package.json](frontend/package.json#L18-L21). La evidencia apunta al conjunto de gráficos/Recharts como candidato que se puede separar del entry; React DOM sigue siendo base necesaria de la app, no una dependencia que convenga quitar.
+
+### Propuestas
+
+1. **Separar el código de los gráficos del entry inicial.** Archivos: [App.tsx](frontend/src/App.tsx#L1-L5) y componentes [income-outcome-chart.tsx](frontend/src/components/dashboard/income-outcome-chart.tsx#L5-L14), [profit-percent-chart.tsx](frontend/src/components/dashboard/profit-percent-chart.tsx#L5-L14). El import estático incorpora Recharts y su grafo (incluidos módulos D3 y Redux Toolkit) al único chunk de 585,975 bytes. **Regla:** [bundle-dynamic-imports.md](.agents/skills/vercel-react-best-practices/rules/bundle-dynamic-imports.md), cuya intención es apartar componentes pesados del bundle inicial; su ejemplo `next/dynamic` no aplica a Vite. **Cambio propuesto:** usar `React.lazy(() => import(...))` con rutas literales para ambos componentes y envolverlos en `Suspense` con un fallback de skeleton ya existente. Las gráficas seguirían montándose al cargar el dashboard, pero su código quedaría en chunks asíncronos. Volver a medir cada chunk: el split reduce el entry, pero hay que comprobar que ningún chunk asíncrono conserve un tamaño superior a 500 kB.
+2. **Combinar las iteraciones de los KPI.** Archivo: [financial-utils.ts](frontend/src/lib/financial-utils.ts#L21-L33). `computeKPIs` hace dos `filter()` sobre `movements`, crea dos arrays temporales y luego recorre cada uno con `reduce()` para sumar. **Regla:** [js-combine-iterations.md](.agents/skills/vercel-react-best-practices/rules/js-combine-iterations.md). **Cambio propuesto:** acumular `totalIncome` y `totalOutcome` en un único `for...of` con una condición por `operation_type`, evitando los arrays intermedios; conservar las aserciones de totales y de ingreso cero en [financial-utils.test.ts](frontend/src/lib/financial-utils.test.ts#L14-L53).
+
+## Vercel React: cambios aplicados
+
+1. **Carga diferida de los gráficos.** Archivo: [App.tsx](frontend/src/App.tsx). Los dos componentes se cargan mediante `React.lazy` con imports dinámicos de rutas literales y `Suspense` con fallback `Skeleton`; no se usó ninguna API de Next.js. **Regla:** [bundle-dynamic-imports.md](.agents/skills/vercel-react-best-practices/rules/bundle-dynamic-imports.md), adaptada al code splitting nativo de Vite.
+2. **KPI en una iteración.** Archivo: [financial-utils.ts](frontend/src/lib/financial-utils.ts). `computeKPIs` ahora acumula ingresos y egresos en un solo `for...of`, sin arrays temporales. Se conservaron las pruebas existentes de totales y el caso sin ingresos (`frontend/src/lib/financial-utils.test.ts`). **Regla:** [js-combine-iterations.md](.agents/skills/vercel-react-best-practices/rules/js-combine-iterations.md).
+
+### Resultados de validación
+
+- **Build:** pasó; el aviso de chunks mayores a 500 kB desapareció. Comparación de los assets reportados por Vite:
+
+   | Asset | Antes | Después |
+   |---|---:|---:|
+   | `index.html` | 0.47 kB (0.30 kB gzip) | 0.56 kB (0.34 kB gzip) |
+   | CSS | 17.81 kB (4.39 kB gzip) | 18.13 kB (4.47 kB gzip) |
+   | Chunk JS único / entry | 585.99 kB (175.59 kB gzip) | 188.05 kB (59.91 kB gzip) |
+   | `LineChart` compartido | incluido en el único chunk | 342.30 kB (100.46 kB gzip) |
+   | `income-outcome-chart` | incluido en el único chunk | 10.40 kB (3.50 kB gzip) |
+   | `profit-percent-chart` | incluido en el único chunk | 7.21 kB (2.80 kB gzip) |
+   | `financial-utils` | incluido en el único chunk | 40.55 kB (13.47 kB gzip) |
+
+- **Tests:** 1 archivo aprobado; **7/7 tests**, sin errores ni advertencias. Igual que la línea base.
+- **Lint:** pasó sin errores, advertencias ni diagnósticos, igual que la línea base.

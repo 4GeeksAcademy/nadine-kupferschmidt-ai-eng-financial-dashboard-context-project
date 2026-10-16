@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { KPIRow } from "@/components/dashboard/kpi-row";
-import { IncomeOutcomeChart } from "@/components/dashboard/income-outcome-chart";
-import { ProfitPercentChart } from "@/components/dashboard/profit-percent-chart";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   type FinancialMovement,
   type KPIMetrics,
@@ -13,6 +12,28 @@ import {
   computeMonthlyData,
   formatMonthlyPeriod,
 } from "@/lib/financial-utils";
+
+const IncomeOutcomeChart = lazy(() =>
+  import("@/components/dashboard/income-outcome-chart").then(
+    ({ IncomeOutcomeChart }) => ({ default: IncomeOutcomeChart }),
+  ),
+);
+const ProfitPercentChart = lazy(() =>
+  import("@/components/dashboard/profit-percent-chart").then(
+    ({ ProfitPercentChart }) => ({ default: ProfitPercentChart }),
+  ),
+);
+
+const chartLoadingFallback = (
+  <div
+    aria-hidden="true"
+    className="space-y-4 rounded-lg border border-border/60 p-6"
+  >
+    <Skeleton className="h-5 w-52" />
+    <Skeleton className="h-3 w-64" />
+    <Skeleton className="h-[280px] w-full rounded-lg" />
+  </div>
+);
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
@@ -70,8 +91,12 @@ function App() {
               aria-label="Financial charts"
               className="grid grid-cols-1 gap-4 xl:grid-cols-2"
             >
-              <IncomeOutcomeChart data={monthlyData} loading={loading} />
-              <ProfitPercentChart data={monthlyData} loading={loading} />
+              <Suspense fallback={chartLoadingFallback}>
+                <IncomeOutcomeChart data={monthlyData} loading={loading} />
+              </Suspense>
+              <Suspense fallback={chartLoadingFallback}>
+                <ProfitPercentChart data={monthlyData} loading={loading} />
+              </Suspense>
             </section>
           </div>
         </div>
