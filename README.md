@@ -36,18 +36,48 @@ _Financial metrics dashboard with a React + TypeScript frontend and a FastAPI ba
       └─ /SKILL.md
 ```
 
-## How to run locally
+## How to run
+
+From the repository root:
 
 ```bash
 docker compose up --build
 ```
 
-The frontend uses the Vite proxy for `/api` by default, so no extra environment variables are required in local development or Codespaces.
-If you need to target a different backend origin, copy `frontend/.env.example` to `.env` and set `VITE_API_BASE_URL`.
+- Frontend: port `5173`
+- Backend: port `8000` (API documentation at `/docs`)
+- Port `5678` is the debugger (`debugpy`), not a web page.
 
-- Frontend: http://localhost:5173
-- Backend: http://localhost:8000
-- API documentation: http://localhost:8000/docs
+### Locally
+
+Open `http://localhost:5173`. By default, the frontend uses the Vite proxy for `/api`, which forwards requests to the backend inside Docker Compose. This procedure was not verified on a local machine in this fork.
+
+### In GitHub Codespaces
+
+In a new Codespace tested on 2026-10-31, `docker compose up --build` worked without additional configuration: `frontend/.env` did not exist (only `.env.example` did), the dashboard loaded data, and DevTools showed `GET /api/metrics` through port `5173` with status `200 OK`. In an earlier Codespace tested on 2026-10-09, the proxy did not connect; the cause could not be confirmed (see `DIAGNOSTICO.md`).
+
+If you see “Unable to load financial data. Please check the backend API.”, try this alternative procedure:
+
+This alternative procedure is what worked in the 2026-10-09 Codespace. To get `<codespace-name>`, copy it from the port `5173` address in the **Ports** tab, or run `echo $CODESPACE_NAME` in the terminal.
+
+1. Create `frontend/.env` (ignored by Git) with the public URL for port 8000, without a trailing `/`:
+   `VITE_API_BASE_URL=https://<codespace-name>-8000.app.github.dev`
+2. In the **Ports** tab, change port `8000` visibility to **Public**.
+3. Restart the services so Vite reads `.env`: `docker compose down`, then `docker compose up --build`.
+4. Open port `5173` from the **Ports** tab.
+
+The normal startup worked in the new Codespace tested; use the alternative steps only if the error appears.
+
+### Validate the project
+
+`pytest` and `vitest` are installed inside the containers, not on your machine. With the services running, in another terminal:
+
+```bash
+docker compose exec -T frontend npm run build
+docker compose exec -T frontend npm test
+docker compose exec -T frontend npm run lint
+docker compose exec -T backend pytest
+```
 
 ---
 

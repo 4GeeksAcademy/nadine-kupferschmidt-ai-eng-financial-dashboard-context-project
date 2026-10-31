@@ -36,18 +36,48 @@ _Dashboard de métricas financieras con frontend en React + TypeScript y backend
       └─ /SKILL.md
 ```
 
-## Cómo ejecutar en local
+## Cómo ejecutar
+
+Desde la raíz del repositorio:
 
 ```bash
 docker compose up --build
 ```
 
-El frontend usa por defecto el proxy de Vite para `/api`, así que no necesitas variables de entorno extra ni en desarrollo local ni en Codespaces.
-Si necesitas apuntar a otro backend, copia `frontend/.env.example` como `.env` y define `VITE_API_BASE_URL`.
+- Frontend: puerto `5173`
+- Backend: puerto `8000` (documentación de la API en `/docs`)
+- El puerto `5678` es el depurador (`debugpy`), no una página web.
 
-- Frontend: http://localhost:5173
-- Backend: http://localhost:8000
-- Documentación API: http://localhost:8000/docs
+### En local
+
+Abre `http://localhost:5173`. El frontend usa por defecto el proxy de Vite para `/api`, que reenvía al backend dentro de Docker Compose. Este procedimiento no se verificó en una máquina local en este fork.
+
+### En GitHub Codespaces
+
+En un Codespace nuevo probado el 2026-10-31, `docker compose up --build` funcionó sin configuración adicional: no existía `frontend/.env` (solo `.env.example`), el dashboard cargó los datos y DevTools mostró `GET /api/metrics` a través del puerto `5173` con estado `200 OK`. En un Codespace anterior, probado el 2026-10-09, el proxy no conectó; la causa no se pudo confirmar (ver `DIAGNOSTICO.md`).
+
+Si ves el mensaje «Unable to load financial data. Please check the backend API.», prueba este procedimiento alternativo:
+
+Este procedimiento alternativo fue el que funcionó en el Codespace del 2026-10-09. Para obtener `<nombre-del-codespace>`, copia el nombre de la dirección del puerto `5173` en la pestaña **Puertos**, o ejecuta `echo $CODESPACE_NAME` en la terminal.
+
+1. Crea `frontend/.env` (Git lo ignora) con la URL pública del puerto 8000, sin `/` al final:
+   `VITE_API_BASE_URL=https://<nombre-del-codespace>-8000.app.github.dev`
+2. En la pestaña **Puertos**, cambia la visibilidad del puerto `8000` a **Public**.
+3. Reinicia los servicios para que Vite lea `.env`: `docker compose down` y luego `docker compose up --build`.
+4. Abre el puerto `5173` desde la pestaña **Puertos**.
+
+El arranque normal funcionó en el Codespace nuevo probado; usa los pasos alternativos solo si aparece el mensaje de error.
+
+### Validar el proyecto
+
+`pytest` y `vitest` se instalan dentro de los contenedores, no en tu máquina. Con los servicios en marcha, en otra terminal:
+
+```bash
+docker compose exec -T frontend npm run build
+docker compose exec -T frontend npm test
+docker compose exec -T frontend npm run lint
+docker compose exec -T backend pytest
+```
 
 ---
 

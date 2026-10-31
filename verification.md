@@ -43,3 +43,16 @@
 ## Nota posterior (Fase 4)
 
 El resumen de la Fase 1 no mencionó `AGENTS.md`, que ya existía en el repo original y define dónde buscar reglas, skills y memory-bank. Se detectó al verificar una cita en `memory-bank/actualizacion.md`.
+
+## Correcciones de la devolución (2026-10-31)
+
+| Área | Resultado de la prueba en Codespace nuevo |
+|---|---|
+| Arranque y datos | Antes de arrancar no existía `frontend/.env` (solo `.env.example`). `docker compose up --build` sin configuración cargó el dashboard con datos; DevTools mostró `/api/metrics` solicitado por el puerto `5173` (proxy de Vite) con estado `200 OK`. |
+| Build frontend | `docker compose exec -T frontend npm run build` → OK, sin avisos; chunk inicial de **187.98 kB**. |
+| Pruebas frontend | `docker compose exec -T frontend npm test` → **7/7**. |
+| Lint frontend | `docker compose exec -T frontend npm run lint` → limpio. |
+| Pruebas backend | `docker compose exec -T backend pytest` → **20/20**; persiste el aviso conocido de `httpx`/`TestClient`. |
+| Versiones backend | Python **3.13.18** y pytest **9.2.0**, frente a Python **3.13.16** y pytest **9.1.1** en la sesión del 2026-10-09. `backend/requirements.txt` no fija versiones (hallazgo 12). |
+| Ejecución local | No se ejecutó en una máquina local. `pytest` y `vitest` solo están instalados dentro de los contenedores. |
+| Procedimiento Codespaces | En un Codespace anterior (2026-10-09) el proxy no conectó; la causa sigue sin confirmar (ver `DIAGNOSTICO.md`). El README ahora presenta la configuración alternativa solo si aparece el mensaje de error. |
