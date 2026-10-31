@@ -36,18 +36,44 @@ _Dashboard de métricas financieras con frontend en React + TypeScript y backend
       └─ /SKILL.md
 ```
 
-## Cómo ejecutar en local
+## Cómo ejecutar
+
+Desde la raíz del repositorio:
 
 ```bash
 docker compose up --build
 ```
 
-El frontend usa por defecto el proxy de Vite para `/api`, así que no necesitas variables de entorno extra ni en desarrollo local ni en Codespaces.
-Si necesitas apuntar a otro backend, copia `frontend/.env.example` como `.env` y define `VITE_API_BASE_URL`.
+- Frontend: puerto `5173`
+- Backend: puerto `8000` (documentación de la API en `/docs`)
+- El puerto `5678` es el depurador (`debugpy`), no una página web.
 
-- Frontend: http://localhost:5173
-- Backend: http://localhost:8000
-- Documentación API: http://localhost:8000/docs
+### En local
+
+Abre `http://localhost:5173`. El frontend usa por defecto el proxy de Vite para `/api`, que reenvía al backend dentro de Docker Compose. Este procedimiento no se verificó en una máquina local en este fork.
+
+### En GitHub Codespaces (procedimiento verificado)
+
+En el Codespace verificado, el proxy de Vite no logró conectar con el backend y el dashboard muestra «Unable to load financial data. Please check the backend API.». La causa no se pudo confirmar (ver `DIAGNOSTICO.md`). El dashboard funcionó así:
+
+1. Crea `frontend/.env` (Git lo ignora) con la URL pública del puerto 8000, sin `/` al final:
+   `VITE_API_BASE_URL=https://<nombre-del-codespace>-8000.app.github.dev`
+2. En la pestaña **Puertos**, cambia la visibilidad del puerto `8000` a **Public**.
+3. Reinicia los servicios para que Vite lea `.env`: `docker compose down` y luego `docker compose up --build`.
+4. Abre el puerto `5173` desde la pestaña **Puertos**.
+
+Al crear un Codespace nuevo, la URL cambia y el puerto vuelve a ser privado: repite los pasos 1 a 4.
+
+### Validar el proyecto
+
+`pytest` y `vitest` se instalan dentro de los contenedores, no en tu máquina. Con los servicios en marcha, en otra terminal:
+
+```bash
+docker compose exec -T frontend npm run build
+docker compose exec -T frontend npm test
+docker compose exec -T frontend npm run lint
+docker compose exec -T backend pytest
+```
 
 ---
 

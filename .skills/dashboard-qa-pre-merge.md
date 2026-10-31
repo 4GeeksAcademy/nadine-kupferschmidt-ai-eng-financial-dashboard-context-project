@@ -14,7 +14,7 @@ Confirmar con pruebas reproducibles que el dashboard funciona y que el merge sol
 
 ## Pasos
 1. Desde la raíz, iniciar con `docker compose up --build`; abrir `http://localhost:5173` y comprobar API en `http://localhost:8000` (`README.es.md`, `docker-compose.yml`).
-2. Si Codespaces muestra `Could not load financial data`, crear `frontend/.env` con `VITE_API_BASE_URL=<URL pública del puerto 8000>`, marcar el puerto 8000 como **Public** y reiniciar con `docker compose down` seguido de `docker compose up --build` (`verification.md`, `DIAGNOSTICO.md`). `frontend/.env` está ignorado (`.gitignore`); no compartir ni versionar su contenido.
+2. Si Codespaces muestra `Unable to load financial data. Please check the backend API.`, crear `frontend/.env` con `VITE_API_BASE_URL=<URL pública del puerto 8000>`, marcar el puerto 8000 como **Public** y reiniciar con `docker compose down` seguido de `docker compose up --build` (`verification.md`, `DIAGNOSTICO.md`). `frontend/.env` está ignorado (`.gitignore`); no compartir ni versionar su contenido.
 3. Recordar que el puerto 5678 es `debugpy`, no una página web (`docker-compose.yml`, `backend/Dockerfile`, `LEVANTAR_PROYECTO.md`).
 4. Ejecutar dentro de los contenedores:
    - `docker compose exec -T frontend npm run build`
