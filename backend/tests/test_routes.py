@@ -1,5 +1,6 @@
 from datetime import date
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -47,6 +48,70 @@ def test_metrics_endpoint_respects_date_filters():
     payload = response.json()
     assert payload
     assert all(item["create_date"] == first_date for item in payload)
+
+
+@pytest.mark.parametrize(
+    ("boundary", "boundary_index"),
+    [("start_date", 0), ("end_date", -1)],
+)
+def test_metrics_endpoint_includes_date_filter_boundaries(boundary, boundary_index):
+    base_response = client.get("/api/metrics")
+    assert base_response.status_code == 200
+    movements = base_response.json()
+    start_date = movements[0]["create_date"]
+    end_date = movements[-1]["create_date"]
+    boundary_date = movements[boundary_index]["create_date"]
+
+    response = client.get(
+        "/api/metrics",
+        params={"start_date": start_date, "end_date": end_date},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert any(item["create_date"] == boundary_date for item in payload)
+
+
+@pytest.mark.parametrize("date_filter", ["start_date", "end_date"])
+def test_metrics_endpoint_leaves_unprovided_date_bound_open(date_filter):
+    base_response = client.get("/api/metrics")
+    assert base_response.status_code == 200
+    movements = base_response.json()
+    boundary_date = movements[len(movements) // 2]["create_date"]
+
+    response = client.get(
+        "/api/metrics",
+        params={date_filter: boundary_date},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    payload_dates = [item["create_date"] for item in payload]
+    assert boundary_date in payload_dates
+
+    if date_filter == "start_date":
+        assert all(item_date >= boundary_date for item_date in payload_dates)
+        assert payload_dates[-1] == movements[-1]["create_date"]
+    else:
+        assert all(item_date <= boundary_date for item_date in payload_dates)
+        assert payload_dates[0] == movements[0]["create_date"]
+
+
+def test_metrics_endpoint_returns_empty_list_for_inverted_date_range():
+    base_response = client.get("/api/metrics")
+    assert base_response.status_code == 200
+    movements = base_response.json()
+    start_date = movements[-1]["create_date"]
+    end_date = movements[0]["create_date"]
+    assert start_date > end_date
+
+    response = client.get(
+        "/api/metrics",
+        params={"start_date": start_date, "end_date": end_date},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == []
 
 
 def test_b2b_endpoint_only_returns_b2b_records():
