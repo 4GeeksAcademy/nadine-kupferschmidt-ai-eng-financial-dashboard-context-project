@@ -11,7 +11,7 @@
 | 7 | Prueba 3 (real): nombró el modelo `HealthResponse`. | real | ✅ |
 | 8 | Prueba 3 (real): `docker compose exec backend pytest` → 15 passed. | real | ✅ |
 | 9 | Prueba 1 (real): dos pruebas nuevas; 7 tests pasan. Prueba 2 (plan): aplicada junto con las reglas 1, 6 y 17. | real / plan | ✅ |
-| 10 | Prueba 4, pedido B (plan): README para Codespaces. | plan | ✅ |
+| 10 | Prueba real en un Codespace nuevo (2026-10-31): se siguió la guía; el arranque normal funcionó sin configuración y mostró que la guía era demasiado pesimista, por lo que se corrigió para dejar los pasos 1 a 4 como alternativa si aparece el error. | real | ✅ |
 | 12 | Prueba 3 (real): informó el warning de `httpx` sin modificarlo. Prueba 4, pedido C (plan): agregar `requests`. | real / plan | ✅ |
 | 13 | Prueba 1 (real): el cambio se vio sin reconstruir. Prueba 4, pedidos C y F (plan): agregar dependencia y desplegar Compose. | real / plan | ✅ |
 | 14 | Prueba 4, pedido D (plan): agregar API key de prueba. | plan | ✅ |

@@ -52,9 +52,13 @@ docker compose up --build
 
 Abre `http://localhost:5173`. El frontend usa por defecto el proxy de Vite para `/api`, que reenvía al backend dentro de Docker Compose. Este procedimiento no se verificó en una máquina local en este fork.
 
-### En GitHub Codespaces (procedimiento verificado)
+### En GitHub Codespaces
 
-En el Codespace verificado, el proxy de Vite no logró conectar con el backend y el dashboard muestra «Unable to load financial data. Please check the backend API.». La causa no se pudo confirmar (ver `DIAGNOSTICO.md`). El dashboard funcionó así:
+En un Codespace nuevo probado el 2026-10-31, `docker compose up --build` funcionó sin configuración adicional: no existía `frontend/.env` (solo `.env.example`), el dashboard cargó los datos y DevTools mostró `GET /api/metrics` a través del puerto `5173` con estado `200 OK`. En un Codespace anterior, probado el 2026-10-09, el proxy no conectó; la causa no se pudo confirmar (ver `DIAGNOSTICO.md`).
+
+Si ves el mensaje «Unable to load financial data. Please check the backend API.», prueba este procedimiento alternativo:
+
+Este procedimiento alternativo fue el que funcionó en el Codespace del 2026-10-09. Para obtener `<nombre-del-codespace>`, copia el nombre de la dirección del puerto `5173` en la pestaña **Puertos**, o ejecuta `echo $CODESPACE_NAME` en la terminal.
 
 1. Crea `frontend/.env` (Git lo ignora) con la URL pública del puerto 8000, sin `/` al final:
    `VITE_API_BASE_URL=https://<nombre-del-codespace>-8000.app.github.dev`
@@ -62,7 +66,7 @@ En el Codespace verificado, el proxy de Vite no logró conectar con el backend y
 3. Reinicia los servicios para que Vite lea `.env`: `docker compose down` y luego `docker compose up --build`.
 4. Abre el puerto `5173` desde la pestaña **Puertos**.
 
-Al crear un Codespace nuevo, la URL cambia y el puerto vuelve a ser privado: repite los pasos 1 a 4.
+El arranque normal funcionó en el Codespace nuevo probado; usa los pasos alternativos solo si aparece el mensaje de error.
 
 ### Validar el proyecto
 

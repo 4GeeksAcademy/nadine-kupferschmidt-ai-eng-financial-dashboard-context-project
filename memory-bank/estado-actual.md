@@ -5,8 +5,8 @@
 - El encabezado ya usa `formatMonthlyPeriod(monthlyData)`; la utilidad toma el primer y último `month` de los datos. En la Prueba 1 se confirmó que el dashboard mostró «Oct 2025 - Sep 2026». Fuente: `frontend/src/App.tsx:53`, `frontend/src/lib/financial-utils.ts:69-76`, `.agents/validacion-reglas.md` (Prueba 1, reglas 1, 4 y 17).
 - La utilidad del periodo tiene pruebas de rango normal y lista vacía; la suite frontend reportó 7 tests pasados. Fuente: `frontend/src/lib/financial-utils.test.ts:107-119`, `.agents/validacion-reglas.md` (Prueba 1, regla 9).
 - `/health` ahora usa el modelo `HealthResponse` y declara `response_model=HealthResponse`; la suite backend reportó 15 tests pasados y un warning deprecado de `httpx` en `TestClient`. Fuente: `backend/app/routes.py:65-66`, `backend/app/routes.py:247-249`, `.agents/validacion-reglas.md` (Prueba 3, reglas 2, 7, 8 y 12).
-- En el Codespace verificado, el proxy interno de Vite no logró establecer TCP con `backend:8000`; la causa de bajo nivel quedó sin evidencia. Fuente: `verification.md` (afirmaciones 12-16), `DIAGNOSTICO.md:90`, `DIAGNOSTICO.md:104`.
-- La verificación registra como solución funcional configurar `frontend/.env` con la URL pública del puerto `8000`, marcarlo como Public, reiniciar Compose y recargar; el dashboard mostró datos. Fuente: `verification.md` (Cómo ejecutar en Codespaces; Prueba 1, regla 13, `.agents/validacion-reglas.md`).
+- En un Codespace nuevo probado el 2026-10-31, `docker compose up --build` funcionó sin configuración: no existía `frontend/.env` (solo `.env.example`), el dashboard cargó datos y DevTools mostró `/api/metrics` a través del puerto `5173` con estado `200 OK`. En el Codespace anterior probado el 2026-10-09 el proxy no conectó; la causa sigue sin confirmarse. Fuentes: `verification.md` (Correcciones de la devolución, 2026-10-31), `DIAGNOSTICO.md`.
+- Los pasos para configurar `frontend/.env` con la URL pública del puerto `8000`, marcarlo como Public, reiniciar Compose y abrir `5173` se conservan como procedimiento alternativo solo si aparece el mensaje de error. La guía se siguió en una sesión nueva y se corrigió por ser demasiado pesimista. Fuente: `README.es.md`, `README.md`, `.agents/validacion-reglas.md` (regla 10).
 
 ## Skills de agente
 
@@ -26,7 +26,6 @@ Las prioridades siguientes corresponden únicamente a riesgos que siguen listado
 
 - Aislar el generador aleatorio del estado global de `random` (hallazgo 3). Fuente: `hallazgos.md:13`.
 - Conservar el error técnico recibido por el frontend para diagnóstico (hallazgo 5). Fuente: `hallazgos.md:15`.
-- Alinear la afirmación del README sobre Codespaces con la configuración que necesitó el Codespace verificado (hallazgo 10). Fuente: `hallazgos.md:30`.
 - Fijar versiones de dependencias backend y revisar el warning de compatibilidad de `httpx` (hallazgo 12). Fuente: `hallazgos.md:35`.
 - Restringir la configuración CORS amplia (hallazgo 15). Fuente: `hallazgos.md:41`.
 - Limitar la exposición del puerto `debugpy` publicado por Compose (hallazgo 16). Fuente: `hallazgos.md:42`.
